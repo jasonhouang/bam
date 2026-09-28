@@ -20,6 +20,7 @@ arg_parser.add_argument("--mass", type=float, required=True)
 arg_parser.add_argument("--arm-mass", type=float, required=True)
 arg_parser.add_argument("--length", type=float, required=True)
 arg_parser.add_argument("--port", type=str, default="/dev/ttyUSB0")
+arg_parser.add_argument("--id", type=int, default=1)
 arg_parser.add_argument("--logdir", type=str, required=True)
 arg_parser.add_argument("--trajectory", type=str, default="lift_and_drop")
 arg_parser.add_argument("--motor", type=str, required=True)
@@ -30,7 +31,22 @@ args = arg_parser.parse_args()
 if args.trajectory not in trajectories:
     raise ValueError(f"Unknown trajectory: {args.trajectory}")
 
-_XL330_MOTORS = {"xl330", "xl330i"}
+_XL330_MOTORS = {"xl330", "xl330i", "xl330m077", "xl330m077i"}
+
+# Expected model number for each XL330 variant, to catch recording with the wrong servo
+_XL330_MODEL_NUMBERS = {
+    "xl330": 1200,  # XL330-M288-T
+    "xl330i": 1200,
+    "xl330m077": 1190,  # XL330-M077-T
+    "xl330m077i": 1190,
+}
+# Operating modes: 3 = position (PWM), 5 = current-based position
+_XL330_OPERATING_MODES = {
+    "xl330": 3,
+    "xl330i": 5,
+    "xl330m077": 3,
+    "xl330m077i": 5,
+}
 
 # XL330-specific conversion helpers
 _XL330_RADS_PER_SEC_PER_COUNT = 0.229 * (2.0 * np.pi / 60.0)
@@ -55,7 +71,20 @@ if args.motor in _XL330_MOTORS:
     from rustypot import Xl330PyController
 
     c = Xl330PyController(args.port, baudrate=1000000, timeout=0.01)
-    ID = 1
+    ID = args.id
+
+    model_number = c.read_model_number(ID)[0]
+    if model_number != _XL330_MODEL_NUMBERS[args.motor]:
+        raise ValueError(
+            f"Motor '{args.motor}' expects model number {_XL330_MODEL_NUMBERS[args.motor]}, "
+            f"but servo {ID} reports {model_number}"
+        )
+
+    operating_mode = _XL330_OPERATING_MODES[args.motor]
+    if c.read_operating_mode(ID)[0] != operating_mode:
+        # Operating mode is in EEPROM, torque must be disabled to write it
+        c.write_torque_enable(ID, False)
+        c.write_operating_mode(ID, operating_mode)
 
     start = time.time()
     while time.time() - start < 1.0:

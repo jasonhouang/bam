@@ -17,6 +17,7 @@ arg_parser.add_argument("--arm-mass", type=float, required=True)
 arg_parser.add_argument("--length", type=float, required=True)
 arg_parser.add_argument("--motor", type=str, required=True)
 arg_parser.add_argument("--port", type=str, default="/dev/ttyUSB0")
+arg_parser.add_argument("--id", type=int, default=1)
 arg_parser.add_argument("--logdir", type=str, required=True)
 arg_parser.add_argument("--vin", type=float, required=False, default=15.0)
 arg_parser.add_argument("--speak", action="store_true")
@@ -28,6 +29,8 @@ KPS = {
     "xl320": [4, 8, 16, 32],
     "xl330": [50, 100, 200, 300, 400],
     "xl330i": [50, 100, 200, 300, 400],
+    "xl330m077": [50, 100, 200, 300],#, 400],
+    "xl330m077i": [50, 100, 200, 300, 400]
 }
 
 if args.motor not in KPS:
@@ -38,7 +41,7 @@ trajectories = ["sin_sin", "lift_and_drop", "up_and_down", "sin_time_square"]
 
 command_base = f"uv run -m bam.dynamixel.record --mass {args.mass} --arm-mass {args.arm_mass} --length {args.length}"
 command_base += (
-    f" --port {args.port} --logdir {args.logdir} --motor {args.motor} --vin {args.vin}"
+    f" --port {args.port} --id {args.id} --logdir {args.logdir} --motor {args.motor} --vin {args.vin}"
 )
 
 

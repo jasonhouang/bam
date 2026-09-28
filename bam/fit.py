@@ -40,6 +40,9 @@ arg_parser.add_argument("--wandb", action="store_true")
 arg_parser.add_argument("--set", type=str, default="")
 arg_parser.add_argument("--validation_kp", type=int, default=0)
 arg_parser.add_argument("--eval", action="store_true")
+arg_parser.add_argument(
+    "--init", type=str, default=None, help="Params JSON to start the optimization from"
+)
 args = arg_parser.parse_args()
 
 if not args.eval:
@@ -212,11 +215,18 @@ else:
     study_url = f"sqlite:///study.db"
     # study_url = f"mysql://root:root@127.0.0.1:6033/optuna"
 
+    x0 = None
+    if args.init is not None:
+        # Starting point: values from the JSON (clipped to bounds), defaults otherwise
+        init = json.load(open(args.init))
+        x0 = {}
+        for name, parameter in make_model().get_parameters().items():
+            if parameter.optimize:
+                value = init.get(name, parameter.value)
+                x0[name] = float(np.clip(value, parameter.min, parameter.max))
+
     if args.method == "cmaes":
-        sampler = optuna.samplers.CmaEsSampler(
-            # x0=model.get_parameter_values(),
-            restart_strategy="bipop"
-        )
+        sampler = optuna.samplers.CmaEsSampler(x0=x0, restart_strategy="bipop")
     elif args.method == "random":
         sampler = optuna.samplers.RandomSampler()
     elif args.method == "nsgaii":
@@ -229,6 +239,8 @@ else:
             study = optuna.load_study(study_name=study_name, storage=study_url)
         else:
             study = optuna.create_study(sampler=sampler)
+            if x0 is not None:
+                study.enqueue_trial(x0)
         optuna.logging.set_verbosity(optuna.logging.WARNING)
         callbacks = []
         if enable_monitoring:

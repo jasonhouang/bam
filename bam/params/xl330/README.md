@@ -1,0 +1,1 @@
+this is for the xl330m288t

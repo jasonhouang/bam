@@ -13,6 +13,8 @@ from .dynamixel.actuator import (
     XL320Actuator,
     XL330Actuator,
     XL330CurrentActuator,
+    XL330M077Actuator,
+    XL330M077CurrentActuator,
 )
 from .feetech.actuator import STS3215Actuator
 from .unitree.actuator import UnitreeGo1Actuator
@@ -26,6 +28,8 @@ actuators = {
     "xl320": lambda: XL320Actuator(Pendulum),
     "xl330": lambda: XL330Actuator(Pendulum),
     "xl330i": lambda: XL330CurrentActuator(Pendulum),
+    "xl330m077": lambda: XL330M077Actuator(Pendulum),
+    "xl330m077i": lambda: XL330M077CurrentActuator(Pendulum),
     # eRob actuators with custom PD controller
     "erob80_100": lambda: ErobActuator(Pendulum, damping=2.0),
     "erob80_50": lambda: ErobActuator(Pendulum, damping=1.0),

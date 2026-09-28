@@ -182,3 +182,37 @@ class XL330CurrentActuator(CurrentControlledActuator):
 
     def get_extra_inertia(self) -> float:
         return self.model.armature.value
+
+
+class XL330M077Actuator(XL330Actuator):
+    """
+    Represents a Dynamixel XL330-M077-T actuator.
+
+    Same motor and firmware as the XL330-M288-T, with a 77:1 gearbox instead of
+    288:1: the initial guesses are scaled accordingly (kt ~ ratio, armature ~ ratio²).
+    """
+
+    def initialize(self):
+        self.model.kt = Parameter(0.1, 0.01, 1.0)
+        self.model.R = Parameter(2.6, 1.0, 5.0)
+        self.model.armature = Parameter(0.0005, 0.00001, 0.01)
+
+        # Much weaker when driving than when backdriven: the motor-side load
+        # friction needs more room than the default 0.5
+        self.model.max_load_friction = 1.0
+
+
+class XL330M077CurrentActuator(XL330CurrentActuator):
+    """
+    Represents a Dynamixel XL330-M077-T actuator controlled in current position mode.
+    """
+
+    def initialize(self):
+        self.model.kt = Parameter(0.1, 0.01, 1.0)
+        self.model.R = Parameter(2.6, 1.0, 5.0)
+        self.model.armature = Parameter(0.0005, 0.00001, 0.01)
+
+        # Much weaker when driving than when backdriven: the motor-side load
+        # friction needs more room than the default 0.5
+        self.model.max_load_friction = 1.0
+        self.model.current_limit = Parameter(1.5, 1.0, 3.0)
