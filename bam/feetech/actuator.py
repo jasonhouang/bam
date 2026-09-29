@@ -153,3 +153,49 @@ class STS3215Actuator(VoltageControlledActuator):
         self.duty_cycle = duty_cycle  # for logging (and the battery drop model)
 
         return self.vin * duty_cycle
+
+
+class HD1910Actuator(STS3215Actuator):
+    """
+    Feetech HD-1910 5V (12 kg.cm, TTL serial).
+
+    Same firmware rate-limiting P-controller architecture as the STS3215
+    (stateful compute_control, q_target_smooth), but with different motor
+    constants identified on the pendulum bench at 5.0–5.2 V.
+
+    Powered by a regulated 5.0 V rail; never 12 V on this servo.
+    """
+
+    def __init__(self, testbench_class: Testbench):
+        # Bypass STS3215Actuator.__init__ → go straight to VoltageControlledActuator
+        VoltageControlledActuator.__init__(
+            self,
+            testbench_class,
+            vin=5.0,
+            kp=32,
+            error_gain=0.163,
+            max_pwm=0.97,
+        )
+        self.default_max_velocity = 8.0282  # rad/s, from bench identification
+        self.q_target_smooth: ArrayLike | None = None
+        self._to_reset_env_ids: list = []
+
+    def initialize(self):
+        # Torque constant [Nm/A] or [V/(rad/s)] — bench-identified
+        self.model.kt = Parameter(0.692, 0.05, 2.5)
+
+        self.model.error_gain_ratio = Parameter(1.0, 0.1, 10.0)
+
+        # Motor resistance [Ohm] — bench-identified
+        self.model.R = Parameter(3.75, 0.1, 10.0)
+
+        # Motor armature / apparent inertia [kg m^2] — bench-identified
+        self.model.armature = Parameter(0.00224, 0.0001, 0.04)
+
+        self.model.q_offset = Parameter(0, -0.2, 0.2)
+
+        self.model.max_velocity = Parameter(
+            self.default_max_velocity,
+            0.1 * self.default_max_velocity,
+            10.0 * self.default_max_velocity,
+        )

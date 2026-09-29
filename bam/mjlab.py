@@ -96,7 +96,7 @@ class BamActuatorCfg(ActuatorCfg):
     * **Custom JSON**: set ``json_path`` to a BAM params JSON file produced by
       ``bam.fit``.
 
-    :param motor_name: Name of the bundled motor (e.g. "xl330", "xl320", "mx106", "mx64"). Any voltage- or current-controlled actuator (:class:`~bam.actuator.DCMotorActuator`) is supported. Mutually exclusive with ``json_path``.
+    :param motor_name: Name of the bundled motor (e.g. "xl330", "xl320", "mx106", "mx64", "hd1910"). Any voltage- or current-controlled actuator (:class:`~bam.actuator.DCMotorActuator`) is supported. Mutually exclusive with ``json_path``.
     :param model: Model variant to use with ``motor_name``, one of "m1"–"m6". Mutually exclusive with ``json_path``.
     :param json_path: Path to a custom BAM params JSON file produced by ``bam.fit``. Mutually exclusive with ``motor_name`` and ``model``.
     :param target_names_expr: Tuple of regex patterns to match actuated joint names.
