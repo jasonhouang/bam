@@ -152,7 +152,7 @@ class HD1910Actuator(VoltageControlledActuator):
         # inference before reset_bam_ctrl), seed from the current position so
         # the rate-limiter starts at equilibrium instead of zero.
         if self.q_target_smooth is None:
-            self.q_target_smooth = self.backend.asarray(q)
+            self.q_target_smooth = q
         # Internal target position is clipped using maximum velocity
         self.q_target_smooth = self.backend.clamp(
             q_target,
