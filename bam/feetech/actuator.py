@@ -113,6 +113,10 @@ class HD1910Actuator(VoltageControlledActuator):
             max_pwm=0.97,
         )
         self.default_max_velocity = 8.0282  # rad/s, from bench identification
+        # Lazily initialised on first compute_control (or in load_log / reset)
+        # so that both the pendulum bench and the warp training path work
+        # without an explicit seeding step.
+        self.q_target_smooth = None
 
     def get_extra_inertia(self) -> float:
         return self.model.armature.value
@@ -144,6 +148,11 @@ class HD1910Actuator(VoltageControlledActuator):
     def compute_control(
         self, q_target: ArrayLike, q: ArrayLike, dq: ArrayLike, dt: float
     ) -> ArrayLike | None:
+        # Lazy init: on the very first call (warp training path, or CPU
+        # inference before reset_bam_ctrl), seed from the current position so
+        # the rate-limiter starts at equilibrium instead of zero.
+        if self.q_target_smooth is None:
+            self.q_target_smooth = self.backend.asarray(q)
         # Internal target position is clipped using maximum velocity
         self.q_target_smooth = self.backend.clamp(
             q_target,
@@ -160,3 +169,7 @@ class HD1910Actuator(VoltageControlledActuator):
         duty_cycle = self.backend.clamp(duty_cycle, -self.max_pwm, self.max_pwm)
 
         return self.vin * duty_cycle
+
+    def reset(self, env_ids=...) -> None:
+        """Clear the rate-limiter state so it re-seeds on the next compute_control."""
+        self.q_target_smooth = None
